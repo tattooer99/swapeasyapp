@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTelegram } from '../hooks/useTelegram'
 import { useSupabase } from '../hooks/useSupabase'
 import PhotoUploader from '../components/PhotoUploader'
 import { ITEM_TYPES, PRICE_CATEGORIES, Case } from '../types'
+import { safeBackButtonShow, safeBackButtonHide } from '../utils/telegram'
 import './EditCasePage.css'
 
 export default function EditCasePage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const { webApp } = useTelegram()
-  const { getMyCases, updateCase } = useSupabase()
+  const { currentUser, loading: userLoading, getMyCases, updateCase } = useSupabase()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [caseItem, setCaseItem] = useState<Case | null>(null)
@@ -22,70 +23,7 @@ export default function EditCasePage() {
     photos: [] as string[],
   })
 
-  useEffect(() => {
-    if (webApp?.BackButton) {
-      webApp.BackButton.show()
-      webApp.BackButton.onClick(() => navigate('/my-cases'))
-    }
-
-    if (webApp?.MainButton) {
-      webApp.MainButton.setText('Зберегти зміни')
-      webApp.MainButton.show()
-      webApp.MainButton.onClick(handleSave)
-    }
-
-    return () => {
-      if (webApp?.BackButton) {
-        webApp.BackButton.hide()
-      }
-      if (webApp?.MainButton) {
-        webApp.MainButton.hide()
-      }
-    }
-  }, [webApp, navigate])
-
-  useEffect(() => {
-    loadCase()
-  }, [id])
-
-  const loadCase = async () => {
-    try {
-      setLoading(true)
-      const cases = await getMyCases()
-      const foundCase = cases.find(c => c.id === Number(id))
-      
-      if (!foundCase) {
-        if (webApp) {
-          webApp.showAlert('Кейс не знайдено')
-        }
-        navigate('/my-cases')
-        return
-      }
-
-      setCaseItem(foundCase)
-      setFormData({
-        title: foundCase.title,
-        item_type: foundCase.item_type,
-        description: foundCase.description,
-        price_category: foundCase.price_category,
-        photos: [
-          foundCase.photo1,
-          foundCase.photo2,
-          foundCase.photo3,
-        ].filter(Boolean) as string[],
-      })
-    } catch (error) {
-      console.error('Error loading case:', error)
-      if (webApp) {
-        webApp.showAlert('Помилка при завантаженні кейсу')
-      }
-      navigate('/my-cases')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!caseItem) return
 
     if (!formData.title || !formData.item_type || !formData.description || !formData.price_category) {
@@ -108,9 +46,9 @@ export default function EditCasePage() {
         item_type: formData.item_type,
         description: formData.description,
         price_category: formData.price_category,
-        photo1: formData.photos[0] || undefined,
-        photo2: formData.photos[1] || undefined,
-        photo3: formData.photos[2] || undefined,
+        photo1: formData.photos[0] || null,
+        photo2: formData.photos[1] || null,
+        photo3: formData.photos[2] || null,
       })
 
       if (webApp) {
@@ -136,7 +74,87 @@ export default function EditCasePage() {
         webApp.MainButton.hideProgress()
       }
     }
+  }, [caseItem, formData, webApp, navigate, updateCase])
+
+  useEffect(() => {
+    if (webApp) {
+      safeBackButtonShow(webApp, () => navigate('/my-cases'))
+    }
+
+    if (webApp?.MainButton) {
+      webApp.MainButton.setText('Зберегти зміни')
+      webApp.MainButton.show()
+      webApp.MainButton.onClick(handleSave)
+    }
+
+    return () => {
+      if (webApp) {
+        safeBackButtonHide(webApp)
+      }
+      if (webApp?.MainButton) {
+        webApp.MainButton.hide()
+        webApp.MainButton.offClick(handleSave)
+      }
+    }
+  }, [webApp, navigate, handleSave])
+
+  useEffect(() => {
+    // Ждем загрузки пользователя перед загрузкой кейса
+    if (!userLoading && currentUser && id) {
+      loadCase()
+    } else if (!userLoading && !currentUser) {
+      console.warn('EditCasePage: currentUser is null, cannot load case')
+      setLoading(false)
+    }
+  }, [id, currentUser, userLoading])
+
+  const loadCase = async () => {
+    if (!id) return
+    
+    try {
+      setLoading(true)
+      console.log('EditCasePage: loading case with id:', id)
+      const cases = await getMyCases()
+      console.log('EditCasePage: loaded cases:', cases.length)
+      const foundCase = cases.find(c => c.id === Number(id))
+      
+      if (!foundCase) {
+        console.warn('EditCasePage: case not found, id:', id)
+        if (webApp) {
+          webApp.showAlert('Кейс не знайдено')
+        } else {
+          alert('Кейс не знайдено')
+        }
+        navigate('/my-cases')
+        return
+      }
+
+      console.log('EditCasePage: found case:', foundCase)
+      setCaseItem(foundCase)
+      setFormData({
+        title: foundCase.title,
+        item_type: foundCase.item_type,
+        description: foundCase.description,
+        price_category: foundCase.price_category,
+        photos: [
+          foundCase.photo1,
+          foundCase.photo2,
+          foundCase.photo3,
+        ].filter(Boolean) as string[],
+      })
+    } catch (error) {
+      console.error('Error loading case:', error)
+      if (webApp) {
+        webApp.showAlert('Помилка при завантаженні кейсу')
+      } else {
+        alert('Помилка при завантаженні кейсу')
+      }
+      navigate('/my-cases')
+    } finally {
+      setLoading(false)
+    }
   }
+
 
   if (loading) {
     return (
