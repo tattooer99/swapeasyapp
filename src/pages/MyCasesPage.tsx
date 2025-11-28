@@ -55,6 +55,7 @@ export default function MyCasesPage() {
   }
 
   const handleEdit = (caseItem: Case) => {
+    console.log('MyCasesPage: editing case:', caseItem.id, caseItem.title)
     navigate(`/edit-case/${caseItem.id}`)
   }
 
