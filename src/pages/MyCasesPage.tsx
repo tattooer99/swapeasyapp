@@ -9,7 +9,7 @@ import './MyCasesPage.css'
 export default function MyCasesPage() {
   const navigate = useNavigate()
   const { webApp } = useTelegram()
-  const { getMyCases, deleteCase } = useSupabase()
+  const { currentUser, loading: userLoading, getMyCases, deleteCase } = useSupabase()
   const [cases, setCases] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null)
@@ -28,13 +28,21 @@ export default function MyCasesPage() {
   }, [webApp, navigate])
 
   useEffect(() => {
-    loadCases()
-  }, [])
+    // Ждем загрузки пользователя перед загрузкой кейсов
+    if (!userLoading && currentUser) {
+      loadCases()
+    } else if (!userLoading && !currentUser) {
+      // Если пользователь не загружен, все равно пробуем загрузить (может быть мок-данные)
+      loadCases()
+    }
+  }, [currentUser, userLoading])
 
   const loadCases = async () => {
     try {
       setLoading(true)
+      console.log('Loading cases, currentUser:', currentUser)
       const data = await getMyCases()
+      console.log('Loaded cases:', data)
       setCases(data)
     } catch (error) {
       console.error('Error loading cases:', error)
@@ -78,10 +86,23 @@ export default function MyCasesPage() {
     }
   }
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="my-cases-page">
         <div className="my-cases-page__loading">Завантаження...</div>
+      </div>
+    )
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="my-cases-page">
+        <div className="my-cases-page__empty">
+          <p>Будь ласка, увійдіть або налаштуйте Supabase.</p>
+          <button className="my-cases-page__empty-button" onClick={() => navigate('/')}>
+            На головну
+          </button>
+        </div>
       </div>
     )
   }
