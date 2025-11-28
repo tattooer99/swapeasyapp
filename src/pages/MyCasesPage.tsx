@@ -4,6 +4,7 @@ import { useTelegram } from '../hooks/useTelegram'
 import { useSupabase } from '../hooks/useSupabase'
 import CaseCard from '../components/CaseCard'
 import { Case } from '../types'
+import { safeBackButtonShow, safeBackButtonHide } from '../utils/telegram'
 import './MyCasesPage.css'
 
 export default function MyCasesPage() {
@@ -15,14 +16,13 @@ export default function MyCasesPage() {
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null)
 
   useEffect(() => {
-    if (webApp?.BackButton) {
-      webApp.BackButton.show()
-      webApp.BackButton.onClick(() => navigate('/'))
+    if (webApp) {
+      safeBackButtonShow(webApp, () => navigate('/'))
     }
 
     return () => {
-      if (webApp?.BackButton) {
-        webApp.BackButton.hide()
+      if (webApp) {
+        safeBackButtonHide(webApp)
       }
     }
   }, [webApp, navigate])
