@@ -70,7 +70,8 @@ export function useSupabase() {
       }
 
       if (existingUser) {
-        setCurrentUser(existingUser)
+        console.log('Found existing user:', existingUser)
+        setCurrentUser(existingUser as User)
         setLoading(false)
         return
       }
@@ -90,7 +91,8 @@ export function useSupabase() {
         console.error('Ошибка при создании пользователя:', createError)
         // Продолжаем работу даже если не удалось создать пользователя
       } else {
-        setCurrentUser(newUser)
+        console.log('Created new user:', newUser)
+        setCurrentUser(newUser as User)
       }
     } catch (error) {
       console.error('Error initializing user:', error)
@@ -278,18 +280,59 @@ export function useSupabase() {
       return []
     }
 
-    if (!currentUser) return []
+    if (!currentUser) {
+      console.warn('getMyCases: currentUser is null')
+      return []
+    }
 
-    const { data, error } = await supabase
+    console.log('getMyCases: fetching cases for user_id:', currentUser.id, 'telegram_id:', currentUser.telegram_id)
+
+    // Пробуем получить кейсы по user_id
+    let { data, error } = await supabase
       .from('my_items')
       .select('*')
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false })
 
+    // Если не нашли по user_id, пробуем найти по telegram_id через таблицу users
+    if ((!data || data.length === 0) && currentUser.telegram_id) {
+      console.log('getMyCases: no cases found by user_id, trying to find user by telegram_id')
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('telegram_id', currentUser.telegram_id)
+        .single()
+
+      if (userData && userData.id !== currentUser.id) {
+        console.log('getMyCases: found different user_id in database:', userData.id, 'updating currentUser')
+        // Обновляем currentUser с правильным id
+        const { data: fullUserData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('telegram_id', currentUser.telegram_id)
+          .single()
+        
+        if (fullUserData) {
+          setCurrentUser(fullUserData as User)
+          // Пробуем снова с правильным user_id
+          const result = await supabase
+            .from('my_items')
+            .select('*')
+            .eq('user_id', fullUserData.id)
+            .order('created_at', { ascending: false })
+          
+          data = result.data
+          error = result.error
+        }
+      }
+    }
+
     if (error) {
       console.error('Error fetching my cases:', error)
       return []
     }
+
+    console.log('getMyCases: found cases:', data?.length || 0, 'cases:', data)
     return (data || []) as Case[]
   }
 
