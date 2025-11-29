@@ -8,10 +8,10 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 import os
 
 # Токен бота из переменной окружения
-BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
+API_TOKEN = os.getenv('API_TOKEN', '7550425973:AAGQtgwfIU2UVaNRJhdHrYdfdTY0lkmWpc8')
 
 # URL вашего Mini App (замените на ваш URL после деплоя)
-MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://your-app.vercel.app')
+MINI_APP_URL = os.getenv('MINI_APP_URL', 'https://swap-easy-app.vercel.app/')
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
@@ -56,7 +56,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 def main() -> None:
     """Запуск бота"""
     # Создаем приложение
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token(API_TOKEN).build()
     
     # Регистрируем обработчик команды /start
     application.add_handler(CommandHandler("start", start_command))
@@ -68,4 +68,5 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
 
