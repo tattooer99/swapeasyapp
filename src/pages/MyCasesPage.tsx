@@ -43,6 +43,15 @@ export default function MyCasesPage() {
       console.log('Loading cases, currentUser:', currentUser)
       const data = await getMyCases()
       console.log('Loaded cases:', data)
+      // Логируем фото для каждого кейса
+      data.forEach((caseItem) => {
+        const photoCount = [caseItem.photo1, caseItem.photo2, caseItem.photo3].filter(p => p != null && p !== '').length
+        console.log(`Case ${caseItem.id} (${caseItem.title}): ${photoCount} photos`, {
+          photo1: caseItem.photo1 ? 'exists' : 'null',
+          photo2: caseItem.photo2 ? 'exists' : 'null',
+          photo3: caseItem.photo3 ? 'exists' : 'null'
+        })
+      })
       setCases(data)
     } catch (error) {
       console.error('Error loading cases:', error)
