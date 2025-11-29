@@ -45,7 +45,7 @@ export default function CaseCard({
     <>
       <div className="case-card">
         {photos.length > 0 && (
-          <div className="case-card__images-grid">
+          <div className={`case-card__images-grid case-card__images-grid--${photos.length}`}>
             {photos.length === 1 && (
               <div className="case-card__image-single" onClick={() => handlePhotoClick(photos[0])}>
                 <img src={photos[0]} alt={caseItem.title} />
