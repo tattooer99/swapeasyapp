@@ -24,52 +24,60 @@ export default function CaseCard({
   const photos = allPhotos.filter((photo): photo is string => photo != null && photo !== '')
   
   // Логируем для отладки
-  if (photos.length > 1) {
-    console.log('CaseCard: multiple photos found for case', caseItem.id, 'photos:', photos.length, 'photo1:', caseItem.photo1 ? 'exists' : 'null', 'photo2:', caseItem.photo2 ? 'exists' : 'null', 'photo3:', caseItem.photo3 ? 'exists' : 'null')
-  }
+  console.log('CaseCard: case', caseItem.id, 'photos count:', photos.length, {
+    photo1: caseItem.photo1 ? 'exists' : 'null',
+    photo2: caseItem.photo2 ? 'exists' : 'null',
+    photo3: caseItem.photo3 ? 'exists' : 'null',
+    photos: photos
+  })
   
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+  const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
 
-  const handlePrevPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setCurrentPhotoIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1))
+  const handlePhotoClick = (photo: string) => {
+    setFullscreenPhoto(photo)
   }
 
-  const handleNextPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setCurrentPhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0))
+  const closeFullscreen = () => {
+    setFullscreenPhoto(null)
   }
 
   return (
-    <div className="case-card">
-      {photos.length > 0 && (
-        <div className="case-card__image-container">
-          <div className="case-card__image">
-            <img src={photos[currentPhotoIndex]} alt={caseItem.title} />
-          </div>
-          {photos.length > 1 && (
-            <>
-              <button
-                className="case-card__photo-nav case-card__photo-nav--prev"
-                onClick={handlePrevPhoto}
-                aria-label="Попереднє фото"
-              >
-                ‹
-              </button>
-              <button
-                className="case-card__photo-nav case-card__photo-nav--next"
-                onClick={handleNextPhoto}
-                aria-label="Наступне фото"
-              >
-                ›
-              </button>
-              <div className="case-card__photo-indicator">
-                {currentPhotoIndex + 1} / {photos.length}
+    <>
+      <div className="case-card">
+        {photos.length > 0 && (
+          <div className="case-card__images-grid">
+            {photos.length === 1 && (
+              <div className="case-card__image-single" onClick={() => handlePhotoClick(photos[0])}>
+                <img src={photos[0]} alt={caseItem.title} />
               </div>
-            </>
-          )}
-        </div>
-      )}
+            )}
+            {photos.length === 2 && (
+              <>
+                <div className="case-card__image-half" onClick={() => handlePhotoClick(photos[0])}>
+                  <img src={photos[0]} alt={caseItem.title} />
+                </div>
+                <div className="case-card__image-half" onClick={() => handlePhotoClick(photos[1])}>
+                  <img src={photos[1]} alt={caseItem.title} />
+                </div>
+              </>
+            )}
+            {photos.length === 3 && (
+              <>
+                <div className="case-card__image-main" onClick={() => handlePhotoClick(photos[0])}>
+                  <img src={photos[0]} alt={caseItem.title} />
+                </div>
+                <div className="case-card__image-side">
+                  <div className="case-card__image-small" onClick={() => handlePhotoClick(photos[1])}>
+                    <img src={photos[1]} alt={caseItem.title} />
+                  </div>
+                  <div className="case-card__image-small" onClick={() => handlePhotoClick(photos[2])}>
+                    <img src={photos[2]} alt={caseItem.title} />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       <div className="case-card__content">
         <div className="case-card__header">
           <h3 className="case-card__title">
@@ -102,7 +110,21 @@ export default function CaseCard({
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* Модальное окно для просмотра фото в полный размер */}
+      {fullscreenPhoto && (
+        <div className="case-card__fullscreen" onClick={closeFullscreen}>
+          <button className="case-card__fullscreen-close" onClick={closeFullscreen}>✕</button>
+          <img 
+            src={fullscreenPhoto} 
+            alt={caseItem.title}
+            onClick={(e) => e.stopPropagation()}
+            className="case-card__fullscreen-image"
+          />
+        </div>
+      )}
+    </>
   )
 }
 
