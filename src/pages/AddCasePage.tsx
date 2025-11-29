@@ -65,15 +65,35 @@ export default function AddCasePage() {
         webApp.MainButton.showProgress()
       }
 
-      await createCase({
+      // Подготавливаем данные для сохранения - используем null вместо undefined
+      const caseData: {
+        title: string
+        item_type: string
+        description: string
+        price_category: string
+        photo1?: string | null
+        photo2?: string | null
+        photo3?: string | null
+      } = {
         title: formData.title,
         item_type: formData.item_type,
         description: formData.description,
         price_category: formData.price_category,
-        photo1: formData.photos[0] || undefined,
-        photo2: formData.photos[1] || undefined,
-        photo3: formData.photos[2] || undefined,
+      }
+      
+      // Добавляем фото только если они есть
+      if (formData.photos[0]) caseData.photo1 = formData.photos[0]
+      if (formData.photos[1]) caseData.photo2 = formData.photos[1]
+      if (formData.photos[2]) caseData.photo3 = formData.photos[2]
+      
+      console.log('AddCasePage: creating case with photos:', {
+        photo1: caseData.photo1 ? 'exists' : 'null',
+        photo2: caseData.photo2 ? 'exists' : 'null',
+        photo3: caseData.photo3 ? 'exists' : 'null',
+        totalPhotos: formData.photos.length
       })
+      
+      await createCase(caseData)
 
       if (webApp) {
         webApp.HapticFeedback?.notificationOccurred('success')
